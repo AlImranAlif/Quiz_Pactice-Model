@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title> Practice Quiz</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --accent: #38bdf8;
+    --good: #22c55e;
+    --bad: #ef4444;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 20px;
+  }
+  .container { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card);
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-size: 0.95rem;
+  }
+  #timer { font-weight: bold; color: var(--accent); }
+  #timer.low { color: var(--bad); }
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .qtag {
+    display: inline-block;
+    background: rgba(56,189,248,0.15);
+    color: var(--accent);
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  .qtext { font-size: 1.05rem; margin-bottom: 14px; line-height: 1.4; }
+  .opt {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: #0f172a;
+    border: 1px solid #334155;
+    color: var(--text);
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: border-color 0.15s;
+  }
+  .opt:hover { border-color: var(--accent); }
+  .opt.selected { border-color: var(--accent); background: rgba(56,189,248,0.1); }
+  .opt.correct { border-color: var(--good); background: rgba(34,197,94,0.15); }
+  .opt.incorrect { border-color: var(--bad); background: rgba(239,68,68,0.15); }
+  .opt:disabled { cursor: default; }
+  .navrow { display: flex; justify-content: space-between; margin-top: 20px; }
+  button.nav {
+    background: var(--accent);
+    color: #0f172a;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  button.nav:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.secondary { background: #334155; color: var(--text); }
+  #jumpgrid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .jumpbtn {
+    padding: 6px 0;
+    border-radius: 6px;
+    border: 1px solid #334155;
+    background: #0f172a;
+    color: var(--muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+  .jumpbtn.answered { border-color: var(--accent); color: var(--accent); }
+  .jumpbtn.current { background: var(--accent); color: #0f172a; font-weight: bold; }
+  #results { display: none; }
+  .scorebig { font-size: 2.2rem; font-weight: bold; margin: 6px 0; }
+  .statrow { display: flex; gap: 16px; margin: 16px 0; flex-wrap: wrap; }
+  .statbox {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 12px 18px;
+    flex: 1;
+    min-width: 100px;
+    text-align: center;
+  }
+  .statbox .n { font-size: 1.3rem; font-weight: bold; }
+  .statbox .l { font-size: 0.75rem; color: var(--muted); }
+  #startscreen { text-align: center; padding: 40px 20px; }
+  #startscreen button {
+    margin-top: 20px;
+    background: var(--accent);
+    color: #0f172a;
+    border: none;
+    padding: 14px 30px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .reviewexp {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    background: #0f172a;
+    padding: 10px 12px;
+    border-radius: 8px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1> Practice Round</h1>
+  <div class="sub">25 questions · simulated 12-min timer · 100% negative marking, just like the real exam</div>
+
+  <div id="startscreen">
+    <p>Covers C/C++, HTML/CSS, JavaScript, Python, SQL, PHP, and Analytical Ability.</p>
+    <p style="color:var(--muted);font-size:0.9rem;">Wrong answers subtract a full mark, same as your real exam tomorrow. Skipped questions cost nothing. Answer fast but don't guess blindly.</p>
+    <button onclick="startQuiz()">Start Practice Round</button>
+  </div>
+
+  <div id="quizarea" style="display:none;">
+    <div class="topbar">
+      <div>Question <span id="qnum">1</span>/25</div>
+      <div id="timer">12:00</div>
+    </div>
+    <div id="jumpgrid"></div>
+    <div class="card">
+      <div class="qtag" id="qtag"></div>
+      <div class="qtext" id="qtext"></div>
+      <div id="opts"></div>
+      <div class="reviewexp" id="explain"></div>
+    </div>
+    <div class="navrow">
+      <button class="nav secondary" id="prevBtn" onclick="prevQ()">Previous</button>
+      <button class="nav secondary" onclick="skipQ()">Skip</button>
+      <button class="nav" id="nextBtn" onclick="nextQ()">Next</button>
+    </div>
+    <div style="text-align:center; margin-top:16px;">
+      <button class="nav" style="background:#334155;color:var(--text);" onclick="finishQuiz()">Submit Now</button>
+    </div>
+  </div>
+
+  <div id="results">
+    <h2>Results</h2>
+    <div class="scorebig" id="scoreline"></div>
+    <div class="statrow">
+      <div class="statbox"><div class="n" id="statCorrect">0</div><div class="l">Correct</div></div>
+      <div class="statbox"><div class="n" id="statWrong">0</div><div class="l">Wrong</div></div>
+      <div class="statbox"><div class="n" id="statSkipped">0</div><div class="l">Skipped</div></div>
+      <div class="statbox"><div class="n" id="statTime">0</div><div class="l">Time used</div></div>
+    </div>
+    <div id="weakTopics" style="margin:16px 0; font-size:0.9rem; color:var(--muted);"></div>
+    <button class="nav" onclick="reviewMode()">Review Answers</button>
+    <button class="nav secondary" onclick="location.reload()">Retake</button>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {topic:"C/C++", q:"What does the following print?\nint x = 5;\nprintf(\"%d\", x++ + ++x);", opts:["11","12","10","13"], correct:0, exp:"x++ gives 5 (x becomes 6), then ++x gives 7 (x becomes 7). 5+7=12... but order of evaluation of + operands is unspecified in C, so exam answer keys typically expect 12. Watch for undefined-behavior traps like this."},
+  {topic:"C/C++", q:"Which of these correctly frees dynamically allocated memory in C++?", opts:["free(ptr);","delete ptr;","ptr.free();","release(ptr);"], correct:1, exp:"'delete' matches 'new'; 'free' matches 'malloc'. Mixing them is undefined behavior."},
+  {topic:"C/C++", q:"What is the size of a 'char' in C/C++ on virtually all platforms?", opts:["1 byte","2 bytes","4 bytes","Platform dependent, usually 8 bytes"], correct:0, exp:"char is guaranteed to be 1 byte (8 bits) by the standard."},
+  {topic:"C/C++", q:"A virtual function in C++ enables which OOP concept?", opts:["Encapsulation","Runtime polymorphism","Compile-time polymorphism","Abstraction only"], correct:1, exp:"Virtual functions allow the correct derived-class method to be called via a base-class pointer/reference, resolved at runtime."},
+  {topic:"C/C++", q:"What does 'const' before a function parameter pointer (const int* p) mean?", opts:["The pointer itself can't change","The value pointed to can't be modified through p","Both pointer and value are immutable","p must be initialized at compile time"], correct:1, exp:"const int* p means the pointee is read-only through p; the pointer p itself can still be reassigned."},
+
+  {topic:"HTML/CSS", q:"Which CSS property controls the space between an element's border and its content?", opts:["margin","padding","spacing","gap"], correct:1, exp:"Padding is inside the border; margin is outside it."},
+  {topic:"HTML/CSS", q:"In Flexbox, which property aligns items along the cross axis?", opts:["justify-content","align-items","flex-direction","align-self on parent"], correct:1, exp:"justify-content controls the main axis; align-items controls the cross axis."},
+  {topic:"HTML/CSS", q:"Which selector has higher specificity?", opts:["A class selector (.btn)","An ID selector (#btn)","An element selector (button)","A universal selector (*)"], correct:1, exp:"Specificity order: inline > ID > class/attribute/pseudo-class > element > universal."},
+  {topic:"HTML/CSS", q:"What does 'box-sizing: border-box' do?", opts:["Adds a border to every box","Includes padding and border in the element's declared width/height","Removes margin collapsing","Forces the box into a grid"], correct:1, exp:"border-box makes width/height include padding and border, not just content."},
+  {topic:"HTML/CSS", q:"Which HTML tag is semantically correct for a navigation menu?", opts:["<div class='nav'>","<nav>","<menu-bar>","<header-nav>"], correct:1, exp:"<nav> is the semantic HTML5 element for navigation links."},
+
+  {topic:"JavaScript", q:"What is the output?\nconsole.log(typeof null);", opts:["'null'","'object'","'undefined'","'boolean'"], correct:1, exp:"This is a famous JS quirk/bug — typeof null returns 'object'."},
+  {topic:"JavaScript", q:"What does 'let' provide that 'var' does not?", opts:["Global scope","Block scope","Hoisting","Immutability"], correct:1, exp:"let (and const) are block-scoped; var is function-scoped."},
+  {topic:"JavaScript", q:"What does [1,2,3].map(x => x*2) return?", opts:["[1,2,3]","[2,4,6]","6","undefined"], correct:1, exp:"map() applies the function to each element and returns a new array."},
+  {topic:"JavaScript", q:"'5' == 5 evaluates to what in JavaScript?", opts:["true","false","NaN","TypeError"], correct:0, exp:"== performs type coercion, so '5' is coerced to 5, making it true. === would be false."},
+  {topic:"JavaScript", q:"Which method removes the last element from an array and returns it?", opts:["shift()","pop()","slice()","splice(0,1)"], correct:1, exp:"pop() removes and returns the last element; shift() does this for the first element."},
+
+  {topic:"Python", q:"What does the following return?\n[x for x in range(5) if x % 2 == 0]", opts:["[0,1,2,3,4]","[0,2,4]","[1,3]","[2,4]"], correct:1, exp:"List comprehension filters for even numbers in range(5): 0,2,4."},
+  {topic:"Python", q:"Which of these is mutable in Python?", opts:["tuple","string","list","int"], correct:2, exp:"Lists are mutable; tuples, strings, and ints are immutable."},
+  {topic:"Python", q:"What does **kwargs allow a function to accept?", opts:["A variable number of positional arguments","A variable number of keyword arguments as a dict","Only two keyword arguments","Nothing, it's invalid syntax"], correct:1, exp:"**kwargs collects extra keyword arguments into a dictionary."},
+  {topic:"Python", q:"What is the output?\nprint(3 // 2)", opts:["1.5","1","2","1.0"], correct:1, exp:"// is floor (integer) division in Python: 3//2 = 1."},
+  {topic:"Python", q:"Which keyword is used to handle exceptions in Python?", opts:["catch","except","rescue","handle"], correct:1, exp:"Python uses try/except, not try/catch like many other languages."},
+
+  {topic:"Database/SQL", q:"Which JOIN returns only rows with matches in both tables?", opts:["LEFT JOIN","RIGHT JOIN","INNER JOIN","FULL OUTER JOIN"], correct:2, exp:"INNER JOIN returns only the rows where the join condition matches in both tables."},
+  {topic:"Database/SQL", q:"What does the 'A' in ACID stand for?", opts:["Availability","Atomicity","Aggregation","Access"], correct:1, exp:"ACID = Atomicity, Consistency, Isolation, Durability."},
+  {topic:"Database/SQL", q:"A foreign key is used to:", opts:["Uniquely identify a row in its own table","Reference the primary key of another table","Encrypt sensitive columns","Speed up all SELECT queries automatically"], correct:1, exp:"A foreign key enforces a relationship by referencing another table's primary key."},
+  {topic:"Database/SQL", q:"Which SQL clause is used to filter groups after a GROUP BY?", opts:["WHERE","HAVING","FILTER","ORDER BY"], correct:1, exp:"HAVING filters aggregated groups; WHERE filters rows before grouping."},
+  {topic:"Database/SQL", q:"What does normalization primarily aim to reduce?", opts:["Query speed","Data redundancy","Number of tables","Index usage"], correct:1, exp:"Normalization organizes data to reduce redundancy and improve integrity, sometimes at a performance cost."},
+
+  {topic:"PHP", q:"Which superglobal holds form data submitted via POST?", opts:["$_GET","$_POST","$_REQUEST only","$_FORM"], correct:1, exp:"$_POST holds data sent via HTTP POST; $_GET holds URL query parameters."},
+  {topic:"PHP", q:"What is the difference between == and === in PHP?", opts:["No difference","== checks type and value, === checks value only","=== checks type and value, == checks value only (with coercion)","Both are invalid in PHP"], correct:2, exp:"=== is strict comparison (type and value); == allows type coercion."},
+  {topic:"PHP", q:"Which statement causes a fatal error if the file is missing, unlike its counterpart which only warns?", opts:["include","require","include_once","import"], correct:1, exp:"require throws a fatal error and stops execution; include only emits a warning and continues."},
+
+  {topic:"Analytical Ability", q:"If all Bloops are Razzies and all Razzies are Lazzies, are all Bloops definitely Lazzies?", opts:["Yes","No","Cannot be determined","Only sometimes"], correct:0, exp:"This is a valid syllogism: Bloop→Razzie→Lazzie, so Bloop→Lazzie holds by transitivity."},
+  {topic:"Analytical Ability", q:"What comes next in the sequence: 2, 6, 12, 20, 30, ?", opts:["40","42","36","44"], correct:1, exp:"Differences are 4,6,8,10,12 (n(n+1) pattern) — next term is 30+12=42."},
+];
+
+let current = 0;
+let answers = new Array(questions.length).fill(null);
+let timeLeft = 12 * 60;
+let timerInterval;
+let reviewing = false;
+
+function startQuiz() {
+  document.getElementById('startscreen').style.display = 'none';
+  document.getElementById('quizarea').style.display = 'block';
+  buildJumpGrid();
+  renderQuestion();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    if (timeLeft <= 0) { clearInterval(timerInterval); finishQuiz(); }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  const el = document.getElementById('timer');
+  el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  el.classList.toggle('low', timeLeft <= 60);
+}
+
+function buildJumpGrid() {
+  const grid = document.getElementById('jumpgrid');
+  grid.innerHTML = '';
+  questions.forEach((_, i) => {
+    const b = document.createElement('div');
+    b.className = 'jumpbtn';
+    b.textContent = i + 1;
+    b.onclick = () => { current = i; renderQuestion(); };
+    grid.appendChild(b);
+  });
+}
+
+function refreshJumpGrid() {
+  const btns = document.querySelectorAll('.jumpbtn');
+  btns.forEach((b, i) => {
+    b.classList.toggle('answered', answers[i] !== null);
+    b.classList.toggle('current', i === current);
+  });
+}
+
+function renderQuestion() {
+  const q = questions[current];
+  document.getElementById('qnum').textContent = current + 1;
+  document.getElementById('qtag').textContent = q.topic;
+  document.getElementById('qtext').textContent = q.q;
+  const optsDiv = document.getElementById('opts');
+  optsDiv.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = opt;
+    if (answers[current] === i) b.classList.add('selected');
+    b.onclick = () => { answers[current] = i; renderQuestion(); };
+    optsDiv.appendChild(b);
+  });
+  document.getElementById('explain').style.display = 'none';
+  document.getElementById('prevBtn').disabled = current === 0;
+  document.getElementById('nextBtn').textContent = current === questions.length - 1 ? 'Finish' : 'Next';
+  refreshJumpGrid();
+}
+
+function nextQ() {
+  if (current === questions.length - 1) { finishQuiz(); return; }
+  current++;
+  renderQuestion();
+}
+function prevQ() { if (current > 0) { current--; renderQuestion(); } }
+function skipQ() { answers[current] = null; nextQ(); }
+
+function finishQuiz() {
+  clearInterval(timerInterval);
+  document.getElementById('quizarea').style.display = 'none';
+  document.getElementById('results').style.display = 'block';
+
+  let correct = 0, wrong = 0, skipped = 0;
+  const topicWrong = {};
+  questions.forEach((q, i) => {
+    if (answers[i] === null) skipped++;
+    else if (answers[i] === q.correct) correct++;
+    else { wrong++; topicWrong[q.topic] = (topicWrong[q.topic]||0)+1; }
+  });
+  const score = correct - wrong; // 100% negative marking
+  const maxScore = questions.length;
+  const pct = ((score / maxScore) * 100).toFixed(1);
+
+  document.getElementById('scoreline').textContent = `${score} / ${maxScore} (${pct}%)`;
+  document.getElementById('statCorrect').textContent = correct;
+  document.getElementById('statWrong').textContent = wrong;
+  document.getElementById('statSkipped').textContent = skipped;
+  const usedSec = 12*60 - timeLeft;
+  document.getElementById('statTime').textContent = `${Math.floor(usedSec/60)}:${(usedSec%60).toString().padStart(2,'0')}`;
+
+  const weak = Object.entries(topicWrong).sort((a,b)=>b[1]-a[1]);
+  const weakDiv = document.getElementById('weakTopics');
+  if (weak.length) {
+    weakDiv.innerHTML = '<strong style="color:var(--text)">Topics to revisit:</strong> ' + weak.map(([t,c]) => `${t} (${c} missed)`).join(', ');
+  } else if (skipped === 0) {
+    weakDiv.textContent = 'Clean sweep — no wrong answers.';
+  } else {
+    weakDiv.textContent = 'No wrong answers, but review the skipped questions below.';
+  }
+}
+
+function reviewMode() {
+  reviewing = true;
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('quizarea').style.display = 'block';
+  document.getElementById('timer').textContent = 'Review';
+  current = 0;
+  renderReview();
+}
+
+function renderReview() {
+  const q = questions[current];
+  document.getElementById('qnum').textContent = current + 1;
+  document.getElementById('qtag').textContent = q.topic;
+  document.getElementById('qtext').textContent = q.q;
+  const optsDiv = document.getElementById('opts');
+  optsDiv.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className = 'opt';
+    b.textContent = opt;
+    b.disabled = true;
+    if (i === q.correct) b.classList.add('correct');
+    else if (i === answers[current]) b.classList.add('incorrect');
+    optsDiv.appendChild(b);
+  });
+  const exp = document.getElementById('explain');
+  exp.style.display = 'block';
+  exp.textContent = (answers[current] === null ? 'Skipped. ' : '') + q.exp;
+  document.getElementById('prevBtn').disabled = current === 0;
+  document.getElementById('nextBtn').textContent = current === questions.length - 1 ? 'Done' : 'Next';
+  document.getElementById('prevBtn').onclick = () => { if(current>0){current--; renderReview();} };
+  document.getElementById('nextBtn').onclick = () => {
+    if (current === questions.length - 1) { document.getElementById('quizarea').style.display='none'; document.getElementById('results').style.display='block'; return; }
+    current++; renderReview();
+  };
+  refreshJumpGrid();
+}
+</script>
+</body>
+</html>
